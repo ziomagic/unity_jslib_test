@@ -1154,26 +1154,26 @@ var tempDouble;
 var tempI64;
 
 var ASM_CONSTS = {
- 1791732: function() {
+ 1792436: function() {
   Module["emscripten_get_now_backup"] = performance.now;
  },
- 1791787: function($0) {
+ 1792491: function($0) {
   performance.now = function() {
    return $0;
   };
  },
- 1791835: function($0) {
+ 1792539: function($0) {
   performance.now = function() {
    return $0;
   };
  },
- 1791883: function() {
+ 1792587: function() {
   performance.now = Module["emscripten_get_now_backup"];
  },
- 1791938: function() {
+ 1792642: function() {
   return Module.webglContextAttributes.premultipliedAlpha;
  },
- 1791999: function() {
+ 1792703: function() {
   return Module.webglContextAttributes.preserveDrawingBuffer;
  }
 };
@@ -2513,6 +2513,29 @@ function _SK_Gyroscope_init(gameObjNameStr, onDynamicCall) {
    _free(funcNameBuffer);
    _free(buffer);
   }
+  class AccelelometerEvent {
+   start() {
+    window.addEventListener("devicemotion", this.onDeviceMotion);
+   }
+   stop() {
+    window.removeEventListener("devicemotion", this.onDeviceMotion);
+   }
+   onDeviceMotion(event) {
+    const result = {
+     accelerationX: event.acceleration.x,
+     accelerationY: event.acceleration.y,
+     accelerationZ: event.acceleration.z,
+     accelerationIncludingGravityX: event.accelerationIncludingGravity.x,
+     accelerationIncludingGravityY: event.accelerationIncludingGravity.y,
+     accelerationIncludingGravityZ: event.accelerationIncludingGravity.z,
+     rotationAlpha: event.rotationRate.alpha,
+     rotationBeta: event.rotationRate.beta,
+     rotationGamma: event.rotationRate.gamma,
+     interval: event.interval
+    };
+    DYNCALL("OnDeviceMotionReading", result, null);
+   }
+  }
   class Gyroevent {
    start() {
     window.addEventListener("deviceorientation", this.onOrientationEvent);
@@ -2534,37 +2557,74 @@ function _SK_Gyroscope_init(gameObjNameStr, onDynamicCall) {
    static isGyroscopeSupported() {
     return window.DeviceOrientationEvent !== undefined;
    }
+   static isAccelelometerSupported() {
+    return window.DeviceOrientationEvent !== undefined;
+   }
    static startGyroscope() {
-    if (!window.DeviceOrientationEvent) {
-     throw new Error("DeviceOrientationEvent is not supported");
+    if (!DeviceOrientationEvent) {
+     console.warn("DeviceOrientationEvent is not supported on this device.");
+     return;
     }
-    if (typeof window.DeviceOrientationEvent["requestPermission"] === "function") {
-     window.DeviceMotionEvent["requestPermission"]().then(permissionState => {
+    if (typeof DeviceOrientationEvent["requestPermission"] === "function") {
+     DeviceMotionEvent["requestPermission"]().then(permissionState => {
       if (permissionState === "granted") {
-       this.gyroevent = new Gyroevent();
-       this.gyroevent.start();
+       this.gyroscopeEvent = new Gyroevent();
+       this.gyroscopeEvent.start();
       }
      }).catch(console.error);
      return;
     }
-    UnityHooks.gyroevent = new Gyroevent();
-    UnityHooks.gyroevent.start();
+    UnityHooks.gyroscopeEvent = new Gyroevent();
+    UnityHooks.gyroscopeEvent.start();
    }
    static stopGyroscope() {
     var _a;
-    (_a = UnityHooks.gyroevent) === null || _a === void 0 ? void 0 : _a.stop();
+    (_a = UnityHooks.gyroscopeEvent) === null || _a === void 0 ? void 0 : _a.stop();
+   }
+   static startAccelerometer() {
+    if (!DeviceMotionEvent) {
+     console.warn("DeviceMotionEvent is not supported on this device.");
+     return;
+    }
+    if (typeof DeviceMotionEvent["requestPermission"] === "function") {
+     DeviceMotionEvent["requestPermission"]().then(permissionState => {
+      if (permissionState === "granted") {
+       this.gyroscopeEvent = new Gyroevent();
+       this.gyroscopeEvent.start();
+      }
+     }).catch(console.error);
+     return;
+    }
+    UnityHooks.accelelometerEvent = new AccelelometerEvent();
+    UnityHooks.accelelometerEvent.start();
+   }
+   static stopAccelerometer() {
+    var _a;
+    (_a = UnityHooks.accelelometerEvent) === null || _a === void 0 ? void 0 : _a.stop();
    }
   }
   return UnityHooks;
  }();
 }
 
+function _SK_Gyroscope_isAccelelometerSupported() {
+ window._skJsLibGyro.isAccelelometerSupported();
+}
+
 function _SK_Gyroscope_isGyroscopeSupported() {
  window._skJsLibGyro.isGyroscopeSupported();
 }
 
+function _SK_Gyroscope_startAccelerometer() {
+ window._skJsLibGyro.startAccelerometer();
+}
+
 function _SK_Gyroscope_startGyroscope() {
  window._skJsLibGyro.startGyroscope();
+}
+
+function _SK_Gyroscope_stopAccelerometer() {
+ window._skJsLibGyro.stopAccelerometer();
 }
 
 function _SK_Gyroscope_stopGyroscope() {
@@ -12782,8 +12842,11 @@ var asmLibraryArg = {
  "JS_SystemInfo_HasWebGL": _JS_SystemInfo_HasWebGL,
  "JS_UnityEngineShouldQuit": _JS_UnityEngineShouldQuit,
  "SK_Gyroscope_init": _SK_Gyroscope_init,
+ "SK_Gyroscope_isAccelelometerSupported": _SK_Gyroscope_isAccelelometerSupported,
  "SK_Gyroscope_isGyroscopeSupported": _SK_Gyroscope_isGyroscopeSupported,
+ "SK_Gyroscope_startAccelerometer": _SK_Gyroscope_startAccelerometer,
  "SK_Gyroscope_startGyroscope": _SK_Gyroscope_startGyroscope,
+ "SK_Gyroscope_stopAccelerometer": _SK_Gyroscope_stopAccelerometer,
  "SK_Gyroscope_stopGyroscope": _SK_Gyroscope_stopGyroscope,
  "__cxa_allocate_exception": ___cxa_allocate_exception,
  "__cxa_atexit": ___cxa_atexit,
@@ -13347,6 +13410,8 @@ var dynCall_vjiiiii = Module["dynCall_vjiiiii"] = createExportWrapper("dynCall_v
 var dynCall_jiiji = Module["dynCall_jiiji"] = createExportWrapper("dynCall_jiiji");
 
 var dynCall_viij = Module["dynCall_viij"] = createExportWrapper("dynCall_viij");
+
+var dynCall_vidddi = Module["dynCall_vidddi"] = createExportWrapper("dynCall_vidddi");
 
 var dynCall_iiiji = Module["dynCall_iiiji"] = createExportWrapper("dynCall_iiiji");
 
